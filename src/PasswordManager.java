@@ -1,36 +1,14 @@
 import java.security.SecureRandom;
-import java.sql.*;
-import java.util.Scanner;
+import java.util.*;
 
 public class PasswordManager {
-    private static final String DB_URL = "jdbc:postgresql://localhost/password_manager";
-    private static final String DB_USER = "postgres";
-    private static final String DB_PASSWORD = "92491043";
+    private static final Map<String, String> passwordMap = new HashMap<>();
 
     public static void main(String[] args) {
-        try {
-            Class.forName("org.postgresql.Driver");
-            Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-            createTable(connection);
-            menu(connection);
-            connection.close();
-        } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
-        }
+        menu();
     }
 
-    private static void createTable(Connection connection) throws SQLException {
-        String createTableQuery = "CREATE TABLE IF NOT EXISTS passwords (" +
-                "id SERIAL PRIMARY KEY, " +
-                "service VARCHAR(255) NOT NULL, " +
-                "username VARCHAR(255) NOT NULL, " +
-                "password VARCHAR(255) NOT NULL)";
-        Statement statement = connection.createStatement();
-        statement.executeUpdate(createTableQuery);
-        statement.close();
-    }
-
-    private static void menu(Connection connection) {
+    private static void menu() {
         Scanner scanner = new Scanner(System.in);
         int choice;
         do {
@@ -45,16 +23,16 @@ public class PasswordManager {
 
             switch (choice) {
                 case 1:
-                    addPassword(connection, scanner);
+                    addPassword(scanner);
                     break;
                 case 2:
                     generateStrongPassword(scanner);
                     break;
                 case 3:
-                    retrievePassword(connection, scanner);
+                    retrievePassword(scanner);
                     break;
                 case 4:
-                    deletePassword(connection, scanner);
+                    deletePassword(scanner);
                     break;
                 case 5:
                     System.out.println("Exiting...");
@@ -66,29 +44,15 @@ public class PasswordManager {
         scanner.close();
     }
 
-    private static void addPassword(Connection connection, Scanner scanner) {
+    private static void addPassword(Scanner scanner) {
         System.out.print("Enter the service name: ");
         String service = scanner.nextLine();
         System.out.print("Enter the username: ");
         String username = scanner.nextLine();
         System.out.print("Enter the password: ");
         String password = scanner.nextLine();
-        try {
-            String insertQuery = "INSERT INTO passwords (service, username, password) VALUES (?, ?, ?)";
-            PreparedStatement statement = connection.prepareStatement(insertQuery);
-            statement.setString(1, service);
-            statement.setString(2, username);
-            statement.setString(3, password);
-            int rowsAffected = statement.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Password saved successfully.");
-            } else {
-                System.out.println("Failed to save the password.");
-            }
-            statement.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        passwordMap.put(service, password);
+        System.out.println("Password saved successfully.");
     }
 
     private static void generateStrongPassword(Scanner scanner) {
@@ -131,44 +95,27 @@ public class PasswordManager {
         return password.toString();
     }
 
-    private static void retrievePassword(Connection connection, Scanner scanner) {
+
+    private static void retrievePassword(Scanner scanner) {
         System.out.print("Enter the service name: ");
         String service = scanner.nextLine();
-        try {
-            String selectQuery = "SELECT * FROM passwords WHERE service = ?";
-            PreparedStatement statement = connection.prepareStatement(selectQuery);
-            statement.setString(1, service);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                System.out.println("Service: " + resultSet.getString("service"));
-                System.out.println("Username: " + resultSet.getString("username"));
-                System.out.println("Password: " + resultSet.getString("password"));
-            } else {
-                System.out.println("No password found for the specified service.");
-            }
-            resultSet.close();
-            statement.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
+        String password = passwordMap.get(service);
+        if (password != null) {
+            System.out.println("Service: " + service);
+            System.out.println("Password: " + password);
+        } else {
+            System.out.println("No password found for the specified service.");
         }
     }
 
-    private static void deletePassword(Connection connection, Scanner scanner) {
+    private static void deletePassword(Scanner scanner) {
         System.out.print("Enter the service name: ");
         String service = scanner.nextLine();
-        try {
-            String deleteQuery = "DELETE FROM passwords WHERE service = ?";
-            PreparedStatement statement = connection.prepareStatement(deleteQuery);
-            statement.setString(1, service);
-            int rowsAffected = statement.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Password deleted successfully.");
-            } else {
-                System.out.println("No password found for the specified service.");
-            }
-            statement.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
+        String password = passwordMap.remove(service);
+        if (password != null) {
+            System.out.println("Password deleted successfully.");
+        } else {
+            System.out.println("No password found for the specified service.");
         }
     }
 }
