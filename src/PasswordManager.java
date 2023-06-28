@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.util.Objects;
@@ -49,9 +50,22 @@ public class PasswordManagerGUI extends JFrame {
             try {
                 int length = Integer.parseInt(lengthString);
                 String generatedPassword = generateRandomPassword(length);
-                JOptionPane.showMessageDialog(this, "Generated Password: " + generatedPassword, "Generated Password", JOptionPane.INFORMATION_MESSAGE);
+                passwordField.setText(generatedPassword);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Invalid length. Please enter a valid number.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        JButton copyButton = new JButton("Copy Password");
+        copyButton.addActionListener(e -> {
+            String password = new String(passwordField.getPassword());
+            if (!password.isEmpty()) {
+                StringSelection selection = new StringSelection(password);
+                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                clipboard.setContents(selection, null);
+                JOptionPane.showMessageDialog(this, "Password copied to clipboard.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "No password generated.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -110,12 +124,15 @@ public class PasswordManagerGUI extends JFrame {
         mainPanel.add(generateButton, constraints);
 
         constraints.gridy = 5;
-        mainPanel.add(retrieveButton, constraints);
+        mainPanel.add(copyButton, constraints);
 
         constraints.gridy = 6;
-        mainPanel.add(deleteButton, constraints);
+        mainPanel.add(retrieveButton, constraints);
 
         constraints.gridy = 7;
+        mainPanel.add(deleteButton, constraints);
+
+        constraints.gridy = 8;
         mainPanel.add(exitButton, constraints);
 
         add(mainPanel);
